@@ -1,10 +1,9 @@
 mod midievent;
 
-use crate::midifile::track::midievent::{ControlNumber_ChannelMode, MIDIEvent, Message, SysCommonMessage, SysRealTimeMessage};
+use crate::midifile::track::midievent::{ControlNumber_ChannelMode, MIDIEvent, Message, SysCommonMessage};
 
 use std::fs;
 use std::io::{BufReader, Read, Seek};
-
 pub struct Track {
     pub events: Vec<MIDIEvent>,
 }
@@ -233,7 +232,7 @@ impl Track {
                     Message::SysMesage(midievent::SysMessage::SysEx { len, message: data })
 
                 }
-                //SysRealTime
+                /*//SysRealTime
                 else if channelbyte & 0b0000_1000!=0{
                     match statusbyte|channelbyte {
                         SysRealTimeMessage::STATUS_Timing_Clock=>{
@@ -264,59 +263,15 @@ impl Track {
                         _=>unreachable!()
 
                     }
-                }
+                }*/
+                //MetaEvent
+                else if statusbyte==0xF0&& channelbyte==0x0F{
+                     //Meta Event
+                f.read_exact(&mut buf1);
+                let metaid= buf1[0];
                 
-                //SysCommon
-                else if channelbyte & 0b0000_0111!=0{
-                    match statusbyte|channelbyte {
-                        SysCommonMessage::STATUS_MIDI_Time_Code_Qtr_Frame=>{
-                            f.read_exact(&mut buf1);
-                            Message::SysMesage(midievent::SysMessage::SysCommon(
-                                SysCommonMessage::MIDI_Time_Code_Qtr_Frame { message_type: buf1[0]>>4, values: buf1[0]&0b0000_1111 }
-                            ))
-                        }
-                        SysCommonMessage::STATUS_Song_Position_Pointer=>{
-                            f.read_exact(&mut buf2);
-                            Message::SysMesage(midievent::SysMessage::SysCommon(
-                                SysCommonMessage::Song_Position_Pointer { lsb: buf2[0], msb: buf2[1] }
-                            ))
-                        }
-                        SysCommonMessage::STATUS_Song_Select=>{
-                            f.read_exact(&mut buf1);
-                            Message::SysMesage(midievent::SysMessage::SysCommon(
-                                SysCommonMessage::Song_Select { song_num: buf1[0] }
-                            ))
-                        }
-                        SysCommonMessage::STATUS_Undefined_F4=>{
-                            Message::SysMesage(midievent::SysMessage::SysCommon(
-                                SysCommonMessage::Undefined_F4
-                            ))
-                        }
-                        SysCommonMessage::STATUS_Undefined_F5=>{
-                            Message::SysMesage(midievent::SysMessage::SysCommon(
-                                SysCommonMessage::Undefined_F5
-                            ))
-                        }
-                        SysCommonMessage::STATUS_Tune_Request=>{
-                            Message::SysMesage(midievent::SysMessage::SysCommon(
-                                SysCommonMessage::Tune_Request
-                            ))
-                        }
-                        SysCommonMessage::STATUS_End_of_SysEx=>{
-                            Message::SysMesage(midievent::SysMessage::SysCommon(
-                                SysCommonMessage::End_of_SysEx
-                            ))
-                        }
-                        _=>unreachable!()
-                    }
-                }else {
-                    unreachable!()
-                }
-            },
-                //Meta Event
-                0xFF => {
                     let len = Self::ReadVarLen(f);
-                    match channelbyte {
+                    match metaid {
                         //SequenceNum
                         0x00 => {
                             f.read_exact(&mut buf2);
@@ -367,7 +322,7 @@ impl Track {
                         |0x7F//シーケンサ'sspecific meta event 
                         |_//Others
                          => {
-                            let mut data: Vec<u8> = Vec::with_capacity(len as usize);
+                            let mut data: Vec<u8> =vec![0;len as usize];
                             for i in 0..len {
                                 f.read_exact(&mut buf1);
                                 data[i as usize] = buf1[0];
@@ -388,18 +343,61 @@ impl Track {
                          
                        
                     }
+                
                 }
+                //SysCommon
+                else if channelbyte & 0b0000_0111!=0{
+                    match statusbyte|channelbyte {
+                        SysCommonMessage::STATUS_MIDI_Time_Code_Qtr_Frame=>{
+                            f.read_exact(&mut buf1);
+                            Message::SysMesage(midievent::SysMessage::SysCommon(
+                                SysCommonMessage::MIDI_Time_Code_Qtr_Frame { message_type: buf1[0]>>4, values: buf1[0]&0b0000_1111 }
+                            ))
+                        }
+                        SysCommonMessage::STATUS_Song_Position_Pointer=>{
+                            f.read_exact(&mut buf2);
+                            Message::SysMesage(midievent::SysMessage::SysCommon(
+                                SysCommonMessage::Song_Position_Pointer { lsb: buf2[0], msb: buf2[1] }
+                            ))
+                        }
+                        SysCommonMessage::STATUS_Song_Select=>{
+                            f.read_exact(&mut buf1);
+                            Message::SysMesage(midievent::SysMessage::SysCommon(
+                                SysCommonMessage::Song_Select { song_num: buf1[0] }
+                            ))
+                        }
+                        SysCommonMessage::STATUS_Undefined_F4=>{
+                            Message::SysMesage(midievent::SysMessage::SysCommon(
+                                SysCommonMessage::Undefined_F4
+                            ))
+                        }
+                        SysCommonMessage::STATUS_Undefined_F5=>{
+                            Message::SysMesage(midievent::SysMessage::SysCommon(
+                                SysCommonMessage::Undefined_F5
+                            ))
+                        }
+                        SysCommonMessage::STATUS_Tune_Request=>{
+                            Message::SysMesage(midievent::SysMessage::SysCommon(
+                                SysCommonMessage::Tune_Request
+                            ))
+                        }
+                        SysCommonMessage::STATUS_End_of_SysEx=>{
+                            Message::SysMesage(midievent::SysMessage::SysCommon(
+                                SysCommonMessage::End_of_SysEx
+                            ))
+                        }
+                        _=>unreachable!()
+                    }
+                }else {
+                    unreachable!()
+                }
+            },
+               
                 _ => {
                     panic!("Unsupported MIDI Event found!");
                     Message::Unsupported},
             };
             //++++Read Event++++
-
-           /*  println!("{}, {}",deltatime,message);
-            events.push(MIDIEvent {
-                delta_time: deltatime,
-                message,
-            });*/
 
             events.push(MIDIEvent {
                 delta_time: deltatime,
@@ -421,7 +419,7 @@ impl Track {
 
         let mut buf: [u8; 1] = [0];
         f.read_exact(&mut buf);
-
+        value= buf[0] as u32;
         if buf[0] & 0x80 != 0 {
             value &= 0x7F;
 
@@ -432,7 +430,6 @@ impl Track {
                 value = (value << 7) + (buf[0] & 0x7F) as u32;
             }
         }
-
         value
     }
 }
