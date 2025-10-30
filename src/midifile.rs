@@ -1,15 +1,14 @@
 //ref: https://maruyama.breadfish.jp/tech/smf/
 //ref: https://amei.or.jp/midistandardcommittee/MIDI1.0.pdf
-use core::panic;
-use std::io::{BufReader, BufWriter, Read, Seek, Write};
+use std::fs;
+use std::io::BufReader;
 use std::path::Path;
-use std::{fs, mem};
 
 use crate::midifile::header::Header;
 use crate::midifile::track::Track;
 
-mod header;
-mod track;
+pub mod header;
+pub mod track;
 
 pub struct MIDIFile {
     pub header: Header,
