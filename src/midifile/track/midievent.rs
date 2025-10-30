@@ -97,6 +97,24 @@ impl std::fmt::Display for Message {
                 "NoteOn: channel {}, note_num {}, velocity {}",
                 channel, note_num, velocity
             ),
+            Message::Meta(meta_event) => match meta_event {
+                MetaEvent::EndOfTrack => write!(f, "Meta: EndOfTrack"),
+                MetaEvent::SetTempo(tempo) => write!(f, "Meta: SetTempo {}", tempo),
+                _ => write!(f, "Meta: Other Meta Event"),
+            },
+            Message::SysMesage(sysmsg) => match sysmsg {
+                SysMessage::SysCommon(sys_common_msg) => match sys_common_msg {
+                    SysCommonMessage::Tune_Request => write!(f, "SysMessage: Tune_Request"),
+                    _ => write!(f, "SysMessage: Other SysCommon Message"),
+                },
+                /*   SysMessage::SysRealTime(sys_real_time_msg) => match sys_real_time_msg {
+                    SysRealTimeMessage::Start => write!(f, "SysMessage: Start"),
+                    SysRealTimeMessage::Stop => write!(f, "SysMessage: Stop"),
+                    _ => write!(f, "SysMessage: Other SysRealTime Message"),
+                },
+                */
+                _ => write!(f, "SysMessage: Other SysMessage"),
+            },
             _ => write!(f, "Other Message"),
         }
     }
@@ -284,7 +302,7 @@ pub enum SysMessage {
     // FsH 1111_0_sss
     SysCommon(SysCommonMessage),
     // FtH 1111_1_ttt
-    SysRealTime(SysRealTimeMessage),
+    //   SysRealTime(SysRealTimeMessage),
 }
 
 //ref p.109
@@ -307,6 +325,8 @@ impl SysCommonMessage {
     pub const STATUS_End_of_SysEx: u8 = 0xF7;
 }
 //ref p.110
+//SysReamTimeMsg does not shown in SMF File!!
+/*
 pub enum SysRealTimeMessage {
     Timing_Clock,
     F9Undefined,
@@ -327,3 +347,5 @@ impl SysRealTimeMessage {
     pub const STATUS_FDUndefined: u8 = 0xFD;
     pub const STATUS_System_Reset: u8 = 0xFF;
 }
+
+*/
