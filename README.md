@@ -1,2 +1,2 @@
 # tettyRustMIDI
-my rust MIDI library
+RustでMIDIを読み込むライブラリです。まだ試作段階なので動作の保証はしません。
